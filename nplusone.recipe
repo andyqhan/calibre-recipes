@@ -1,0 +1,77 @@
+import string, re
+from calibre import strftime
+from calibre.web.feeds.recipes import BasicNewsRecipe
+from calibre.ebooks.BeautifulSoup import BeautifulSoup
+
+class NPlusOne(BasicNewsRecipe):
+
+    title       = 'n+1'
+    __author__  = 'Andy Han'
+    description = 'n+1'
+    timefmt = ' [%a, %d %b, %Y]'
+    needs_subscription = False 
+    remove_tags_before = dict(id='article')
+    remove_tags_after  = dict(id='article')
+    # remove_tags = [dict(attrs={'class':['articleTools', 'post-tools', 'side_tool', 'nextArticleLink clearfix']}),
+    #             dict(id=['footer', 'toolsRight', 'articleInline', 'navigation', 'archive', 'side_search', 'blog_sidebar', 'side_tool', 'side_index']),
+    #             dict(name=['script', 'noscript', 'style'])]
+    # encoding = 'cp1252'
+    no_stylesheets = True
+    # extra_css = 'h1 {font: sans-serif large;}\n.byline {font:monospace;}'
+
+    def parse_index(self):
+        soup = self.index_to_soup('https://nplusonemag.com/magazine/')
+
+        def feed_title(div):
+            return ''.join(div.findAll(text=True, recursive=False)).strip()
+
+        articles = {}
+        key = None
+        ans = []
+        issues = soup.findAll("section", class_="issue")#, attrs={'class':['main', 'magazine-home', 'content']})
+        current_issue = issues[0]
+        print(current_issue)
+
+        # it seems like you have to be subscribed to get most of the articles
+
+        
+        # for div in soup.findAll(True,
+        #      attrs={'class':['section-headline', 'story', 'story headline']}):
+
+        #      if ''.join(div['class']) == 'section-headline':
+        #          key = string.capwords(feed_title(div))
+        #          articles[key] = []
+        #          ans.append(key)
+
+        #      elif ''.join(div['class']) in ['story', 'story headline']:
+        #          a = div.find('a', href=True)
+        #          if not a:
+        #              continue
+        #          url = re.sub(r'\?.*', '', a['href'])
+        #          url += '?pagewanted=all'
+        #          title = self.tag_to_string(a, use_alt=True).strip()
+        #          description = ''
+        #          pubdate = strftime('%a, %d %b')
+        #          summary = div.find(True, attrs={'class':'summary'})
+        #          if summary:
+        #              description = self.tag_to_string(summary, use_alt=False)
+
+        #          feed = key if key is not None else 'Uncategorized'
+        #          if feed not in articles:
+        #              articles[feed] = []
+        #          if not 'podcasts' in url:
+        #              articles[feed].append(
+        #                        dict(title=title, url=url, date=pubdate,
+        #                             description=description,
+        #                             content=''))
+        # ans = self.sort_index_by(ans, {'The Front Page':-1, 'Dining In, Dining Out':1, 'Obituaries':2})
+        # ans = [(key, articles[key]) for key in ans if key in articles]
+        # return ans
+
+    # def preprocess_html(self, soup):
+    #     refresh = soup.find('meta', {'http-equiv':'refresh'})
+    #     if refresh is None:
+    #         return soup
+    #     content = refresh.get('content').partition('=')[2]
+    #     raw = self.browser.open('https://www.nytimes.com'+content).read()
+    #     return BeautifulSoup(raw.decode('cp1252', 'replace'))

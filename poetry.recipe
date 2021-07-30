@@ -1,0 +1,69 @@
+import string, re
+from calibre import strftime
+from calibre.web.feeds.recipes import BasicNewsRecipe
+from calibre.ebooks.BeautifulSoup import BeautifulSoup
+
+class PoetryMagazine(BasicNewsRecipe):
+
+    title       = 'Poetry Magazine'
+    __author__  = 'Andy Han'
+    description = 'Poetry Magazine'
+    timefmt = ' [%a, %d %b, %Y]'
+    needs_subscription = False 
+    remove_tags_before = dict(class_="o-article")
+    remove_tags_after  = dict(class_="o-article")
+    remove_tags = [dict(attrs={'class':['articleTools', 'post-tools', 'side_tool', 'nextArticleLink clearfix', 'c-socialBlocks', 'c-txt_note_mini', 'c-feature-ft', 'c-txt', 'c-index']}),
+                dict(id=['footer', 'toolsRight', 'articleInline', 'navigation', 'archive', 'side_search', 'blog_sidebar', 'side_tool', 'side_index']),
+                dict(name=['script', 'noscript', 'style', 'meta', 'link', 'aside'])]
+    #encoding = 'cp1252'
+    no_stylesheets = True
+    # extra_css = 'h1 {font: sans-serif large;}\n.byline {font:monospace;}'
+
+    def parse_index(self):
+        util_soup = self.index_to_soup('https://www.poetryfoundation.org/poetrymagazine')
+        current_issue_url = util_soup.find("div", class_="c-cover-ft").a.get('href')  # footer "View Issue" link for current issue
+
+        # now that we have url we can find the content
+        soup = self.index_to_soup(current_issue_url)
+
+        cover_url = soup.find("div", class_="c-issueBillboard-cover-media").img.get('srcset')
+        cover_url = cover_url.split(",")
+        cover_url = cover_url[-1].split(" ")
+        cover_url = cover_url[1]
+        self.cover_url = cover_url
+
+        articles = []
+
+        # e.g. "July/August 2021" or "September 2021"
+        issue_title = soup.find("h1", class_="c-shout c-shout_mini c-shout_normal@sm c-mix-shout_brand c-mix-shout_loosen").text
+
+        # non-human-readable class for the list of poems in current issue, under "Table of Contents"
+        #poems = soup.find_all("div", class_="c-tier c-tier_tabbed c-tier_tabbed_minimal c-mix-tier_offsetDistant")[0]
+        poems = soup.find_all("div", class_="c-feature c-mix-feature_shrinkwrap")
+        #print(poems)
+        for poem in poems:
+            author = poem.find('span', class_="c-txt_attribution").text
+            #print(author)
+            
+            for atag in poem.find_all('a', href=True):
+                link = atag.get('href')
+                title = atag.text.strip()
+                article = {
+                    'title': title + ' [{}]'.format(author),  # hack for getting author in; idk why it doesn't work
+                    'url': link,
+                    'date': issue_title,
+                    'author': author
+                }
+                articles.append(article)
+
+        out = [('Poetry Magazine', articles)]
+        #print(out)
+        return out
+        
+    # def preprocess_html(self, soup):
+    #     refresh = soup.find('meta', {'http-equiv':'refresh'})
+    #     if refresh is None:
+    #         return soup
+    #     content = refresh.get('content').partition('=')[2]
+    #     raw = self.browser.open('https://www.nytimes.com'+content).read()
+    #     return BeautifulSoup(raw.decode('cp1252', 'replace'))
